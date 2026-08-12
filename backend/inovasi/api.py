@@ -332,6 +332,7 @@ def verifikasi_nilai(request, inovasi_id: int, indikator_id: int, data: Verifika
 
 @api.get("/spd", response=List[NilaiSPDOut])
 def daftar_spd(request):
+    wajib_verifikator(request)
     p = periode_aktif()
     ada = {n.indikator_id: n for n in p.nilai_spd.all()}
     keluar = []

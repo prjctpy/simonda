@@ -58,6 +58,8 @@ if os.getenv("DB_NAME"):
         "PORT": os.getenv("DB_PORT", "5432"),
     }}
 else:
+    # Fallback untuk uji coba cepat tanpa Postgres terpasang. Jangan dipakai
+    # untuk data yang sungguhan dipakai pengambilan keputusan (lihat README).
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",

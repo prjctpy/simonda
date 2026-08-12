@@ -63,6 +63,14 @@ Setiap kali OPD mengubah bukti, status verifikasinya otomatis kembali ke
 
 ### Backend
 
+Basis data memakai PostgreSQL, termasuk untuk pengembangan lokal (bukan cuma
+produksi). Siapkan peran dan basis datanya sekali saja:
+
+```bash
+sudo -u postgres psql -c "CREATE ROLE simonda WITH LOGIN PASSWORD 'ganti-ini';"
+sudo -u postgres psql -c "CREATE DATABASE simonda WITH OWNER simonda ENCODING 'UTF8';"
+```
+
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
@@ -73,6 +81,11 @@ DEBUG=1
 SECRET_KEY=ganti-dengan-hasil-perintah-di-bawah
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ORIGINS=http://localhost:5173
+DB_NAME=simonda
+DB_USER=simonda
+DB_PASSWORD=ganti-ini
+DB_HOST=localhost
+DB_PORT=5432
 EOF
 
 python -c "import secrets; print(secrets.token_urlsafe(50))"   # isi SECRET_KEY
@@ -81,6 +94,10 @@ python manage.py migrate
 python manage.py seed_simonda --tahun 2026    # catat kata sandi yang dicetak
 python manage.py runserver
 ```
+
+Kosongkan blok `DB_*` di `.env` untuk memakai SQLite berkas lokal alih-alih
+Postgres — cukup untuk uji coba cepat, tapi jangan dipakai untuk data yang
+sungguhan dipakai (lihat catatan di `simonda/settings.py`).
 
 Dokumentasi API otomatis tersedia di `http://localhost:8000/api/docs`.
 Django admin di `/admin/` untuk membuat akun operator tiap OPD.

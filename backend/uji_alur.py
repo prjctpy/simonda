@@ -1,0 +1,223 @@
+"""Uji alur SIMONDA lewat API, memakai aturan penilaian IGA 2026.
+
+    DEBUG=1 SECRET_KEY=... ALLOWED_HOSTS=localhost,testserver python uji_alur.py
+"""
+import os
+from datetime import date
+
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "simonda.settings")
+django.setup()
+
+from django.test import Client  # noqa: E402
+
+from inovasi import iga  # noqa: E402
+from inovasi.models import OPD, Indikator, Inovasi, Periode, User  # noqa: E402
+
+c = Client()
+lolos = gagal = 0
+SANDI = "RahasiaKuat2026"
+
+
+def cek(nama, syarat, tambahan=""):
+    global lolos, gagal
+    if syarat:
+        lolos += 1
+        print(f"  OK   {nama}")
+    else:
+        gagal += 1
+        print(f"  GAGAL {nama} {tambahan}")
+
+
+def kepala(t):
+    return {"HTTP_AUTHORIZATION": f"Bearer {t}"}
+
+
+def masuk(nama):
+    r = c.post("/api/auth/masuk", {"username": nama, "password": SANDI},
+               content_type="application/json")
+    return r.json()["akses"]
+
+
+print("\n== Menyiapkan akun ==")
+periode = Periode.objects.get(aktif=True)
+periode.window_buka, periode.window_tutup = date(2026, 6, 1), date(2026, 8, 31)
+periode.save()
+
+User.objects.filter(username__startswith="uji_").delete()
+Inovasi.objects.all().delete()
+dinkes, distan = OPD.objects.get(kode="DINKES"), OPD.objects.get(kode="DISTAN")
+bappe = OPD.objects.get(kode="BAPPELITBANGDA")
+User.objects.create_user("uji_dinkes", password=SANDI, peran=User.OPERATOR, opd=dinkes)
+User.objects.create_user("uji_distan", password=SANDI, peran=User.OPERATOR, opd=distan)
+User.objects.create_user("uji_verif", password=SANDI, peran=User.VERIFIKATOR, opd=bappe)
+t_op, t_op2, t_vr = masuk("uji_dinkes"), masuk("uji_distan"), masuk("uji_verif")
+print(f"  window {periode.window_buka} s.d. {periode.window_tutup}, "
+      f"sisa {periode.hari_tersisa} hari")
+
+sid = list(Indikator.objects.filter(periode=periode, aspek="sid").order_by("nomor"))
+spd = list(Indikator.objects.filter(periode=periode, aspek="spd").order_by("nomor", "sub"))
+
+print("\n== Katalog tersedia lewat API ==")
+cek("40 baris indikator", len(c.get("/api/indikator", **kepala(t_op)).json()) == 40)
+cek("20 baris SPD", len(c.get("/api/spd", **kepala(t_vr)).json()) == 20)
+cek("operator tidak boleh isi SPD",
+    c.put(f"/api/spd/{spd[0].id}", {"pilihan": 3}, content_type="application/json",
+          **kepala(t_op)).status_code == 403)
+
+print("\n== Mengisi indikator SPD ==")
+for ind in spd:
+    c.put(f"/api/spd/{ind.id}", {"pilihan": 2, "keterangan": "dokumen terlampir"},
+          content_type="application/json", **kepala(t_vr))
+total_spd = sum(float(x["skor"]) for x in c.get("/api/spd", **kepala(t_vr)).json())
+cek("skor SPD semua parameter 2 = 42", total_spd == 42.0, total_spd)
+
+print("\n== Membuat inovasi ==")
+r = c.post("/api/inovasi", {
+    "nama": "SIPADU \u2014 Pendaftaran Pasien Daring", "tahapan": "penerapan",
+    "jenis": "digital", "bentuk": "pelayanan_publik", "urusan": "Kesehatan",
+    "tujuan": "Memangkas antrean di puskesmas.", "mulai_penerapan": "2024-03-01",
+}, content_type="application/json", **kepala(t_op))
+cek("inovasi dibuat", r.status_code == 201, r.content[:200])
+inv = r.json()
+inv_id = inv["id"]
+cek("20 baris indikator SID terbentuk", len(inv["bukti"]) == 20, len(inv["bukti"]))
+cek("skor awal nol", float(inv["skor_klaim"]) == 0)
+cek("5 indikator wajib terdeteksi kosong", len(inv["wajib_belum_terisi"]) == 5,
+    inv["wajib_belum_terisi"])
+
+print("\n== Pemeriksaan kelayakan ==")
+cek("rancang bangun kurang dari 300 kata ditandai",
+    any("300" in m for m in inv["masalah_kelayakan"]), inv["masalah_kelayakan"])
+cek("inovasi belum layak", inv["layak"] is False)
+
+dasar = {"nama": inv["nama"], "urusan": "Kesehatan", "tahapan": "penerapan", "tujuan": "x"}
+r = c.put(f"/api/inovasi/{inv_id}", {**dasar, "mulai_penerapan": "2026-01-01",
+                                     "rancang_bangun": "kata " * 300},
+          content_type="application/json", **kepala(t_op))
+cek("penerapan 2026 ditolak", any("31 Desember 2025" in m for m in r.json()["masalah_kelayakan"]),
+    r.json()["masalah_kelayakan"])
+
+r = c.put(f"/api/inovasi/{inv_id}", {**dasar, "mulai_penerapan": "2021-05-01",
+                                     "rancang_bangun": "kata " * 300},
+          content_type="application/json", **kepala(t_op))
+cek("penerapan sebelum 2024 tanpa pengembangan ditandai",
+    any("sebelum 2024" in m for m in r.json()["masalah_kelayakan"]))
+
+r = c.put(f"/api/inovasi/{inv_id}", {**dasar, "mulai_penerapan": "2021-05-01",
+                                     "pengembangan_terbaru": "2025-02-01",
+                                     "rancang_bangun": "kata " * 300},
+          content_type="application/json", **kepala(t_op))
+cek("penerapan lama + pengembangan 2025 diterima", r.json()["masalah_kelayakan"] == [],
+    r.json()["masalah_kelayakan"])
+
+print("\n== Mengisi parameter indikator SID ==")
+cek("pilihan di luar 0-3 ditolak",
+    c.put(f"/api/inovasi/{inv_id}/nilai/{sid[0].id}", {"pilihan": 5},
+          content_type="application/json", **kepala(t_op)).status_code == 400)
+
+for ind in sid:
+    c.put(f"/api/inovasi/{inv_id}/nilai/{ind.id}", {"pilihan": 3, "catatan": "SK terlampir"},
+          content_type="application/json", **kepala(t_op))
+d = c.get(f"/api/inovasi/{inv_id}", **kepala(t_op)).json()
+cek("skor SID sempurna 111", float(d["skor_klaim"]) == 111.0, d["skor_klaim"])
+cek("tidak ada indikator wajib kosong", d["wajib_belum_terisi"] == [])
+cek("inovasi jadi layak", d["layak"] is True)
+
+video = next(x for x in d["bukti"] if x["nomor"] == 35)
+cek("indikator 35 Video berbobot 4", float(video["bobot"]) == 4.0, video["bobot"])
+cek("skor maksimum video 12", float(video["skor_maks"]) == 12.0)
+
+print("\n== Isolasi antar OPD ==")
+cek("OPD lain tidak melihat", c.get(f"/api/inovasi/{inv_id}", **kepala(t_op2)).status_code == 404)
+cek("operator tidak bisa verifikasi",
+    c.post(f"/api/inovasi/{inv_id}/nilai/{sid[0].id}/verifikasi", {"keputusan": "diterima"},
+           content_type="application/json", **kepala(t_op)).status_code == 403)
+
+print("\n== Alur pengajuan dan verifikasi ==")
+c.post(f"/api/inovasi/{inv_id}/ajukan", **kepala(t_op))
+cek("terkunci saat menunggu verifikasi",
+    c.put(f"/api/inovasi/{inv_id}/nilai/{sid[0].id}", {"pilihan": 1},
+          content_type="application/json", **kepala(t_op)).status_code == 409)
+cek("revisi tanpa catatan ditolak",
+    c.post(f"/api/inovasi/{inv_id}/verifikasi", {"keputusan": "revisi", "catatan": ""},
+           content_type="application/json", **kepala(t_vr)).status_code == 400)
+c.post(f"/api/inovasi/{inv_id}/verifikasi", {"keputusan": "terima", "catatan": "Lengkap."},
+       content_type="application/json", **kepala(t_vr))
+for ind in sid:
+    c.post(f"/api/inovasi/{inv_id}/nilai/{ind.id}/verifikasi", {"keputusan": "diterima"},
+           content_type="application/json", **kepala(t_vr))
+cek("skor terverifikasi 111",
+    float(c.get(f"/api/inovasi/{inv_id}", **kepala(t_vr)).json()["skor_terverifikasi"]) == 111.0)
+
+print("\n== Aturan 5 dari 6 urusan wajib pelayanan dasar ==")
+pr = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
+cek("baru 1 urusan yandas", pr["yandas_terpenuhi"] == 1, pr["yandas_terpenuhi"])
+cek("kurang 4 urusan", pr["yandas_kurang"] == 4)
+cek("skor jumlah inovasi masih nol", float(pr["skor_jumlah_inovasi"]) == 0)
+cek("5 urusan yandas dilaporkan kosong", len(pr["yandas_kosong"]) == 5)
+print(f"       indeks sekarang: {pr['indeks']} ({pr['kategori']})")
+
+
+def buat_lengkap(nama, urusan, token):
+    r = c.post("/api/inovasi", {"nama": nama, "urusan": urusan, "tahapan": "penerapan",
+                                "tujuan": "x", "mulai_penerapan": "2024-06-01",
+                                "rancang_bangun": "kata " * 300},
+               content_type="application/json", **kepala(token))
+    iid = r.json()["id"]
+    for ind in sid:
+        c.put(f"/api/inovasi/{iid}/nilai/{ind.id}", {"pilihan": 3},
+              content_type="application/json", **kepala(token))
+        c.post(f"/api/inovasi/{iid}/nilai/{ind.id}/verifikasi", {"keputusan": "diterima"},
+               content_type="application/json", **kepala(t_vr))
+    c.post(f"/api/inovasi/{iid}/ajukan", **kepala(token))
+    c.post(f"/api/inovasi/{iid}/verifikasi", {"keputusan": "terima", "catatan": "ok"},
+           content_type="application/json", **kepala(t_vr))
+    return iid
+
+
+# SIPADU sudah memakai Kesehatan, jadi empat urusan berikut melengkapinya jadi lima.
+for n, urusan in enumerate(iga.URUSAN_YANDAS[2:6], 1):
+    buat_lengkap(f"Inovasi yandas {n}", urusan, t_op)
+pr5 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
+cek("5 urusan yandas terpenuhi", pr5["yandas_terpenuhi"] == 5, pr5["yandas_terpenuhi"])
+cek("skor jumlah inovasi terbuka", float(pr5["skor_jumlah_inovasi"]) > 0)
+print(f"       setelah 5 urusan terpenuhi: {pr5['indeks']} ({pr5['kategori']})")
+print(f"       lompatan: +{float(pr5['indeks']) - float(pr['indeks']):.2f} poin indeks")
+
+print("\n== Pembagi MAX(12, n) ==")
+cek("5 inovasi tetap dibagi 12", pr5["pembagi"] == 12, pr5["pembagi"])
+cek("7 kursi kosong terdeteksi", pr5["kursi_kosong"] == 7, pr5["kursi_kosong"])
+for n in range(7):
+    buat_lengkap(f"Inovasi tambahan {n}", "Pariwisata", t_op2)
+pr12 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
+cek("12 inovasi, tidak ada kursi kosong", pr12["kursi_kosong"] == 0)
+cek("indeks naik tajam", float(pr12["indeks"]) > float(pr5["indeks"]))
+print(f"        5 inovasi: {pr5['indeks']}   12 inovasi: {pr12['indeks']}")
+
+print("\n== Klaim versus terverifikasi ==")
+ragu = buat_lengkap("Inovasi belum diverifikasi", "Perhubungan", t_op)
+for ind in sid:
+    c.post(f"/api/inovasi/{ragu}/nilai/{ind.id}/verifikasi",
+           {"keputusan": "ditolak", "catatan": "SK belum ditandatangani."},
+           content_type="application/json", **kepala(t_vr))
+d = c.get(f"/api/inovasi/{ragu}", **kepala(t_vr)).json()
+cek("klaim 111 tetapi terverifikasi 0",
+    float(d["skor_klaim"]) == 111.0 and float(d["skor_terverifikasi"]) == 0.0,
+    (d["skor_klaim"], d["skor_terverifikasi"]))
+ring = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()
+cek("proyeksi klaim lebih tinggi dari terverifikasi",
+    float(ring["proyeksi_klaim"]["indeks"]) > float(ring["proyeksi_terverifikasi"]["indeks"]))
+print(f"       klaim OPD      : {ring['proyeksi_klaim']['indeks']}")
+print(f"       terverifikasi  : {ring['proyeksi_terverifikasi']['indeks']}")
+print(f"       sisa hari      : {ring['hari_menuju_tutup']}")
+
+print("\n== Ekspor ==")
+r = c.get("/api/ekspor/iga", **kepala(t_vr))
+cek("CSV berhasil", r.status_code == 200 and b"SIPADU" in r.content)
+cek("berawalan BOM untuk Excel", r.content.startswith("\ufeff".encode()))
+cek("rekap OPD terbaca", c.get("/api/statistik/opd", **kepala(t_vr)).status_code == 200)
+
+print(f"\n{'=' * 46}\n  {lolos} lolos, {gagal} gagal\n{'=' * 46}\n")
+raise SystemExit(1 if gagal else 0)

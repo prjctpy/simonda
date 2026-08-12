@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from decimal import Decimal
 from typing import List, Optional
 
 from ninja import Schema
@@ -49,7 +48,7 @@ class IndikatorOut(Schema):
     nomor: int
     variabel: str
     nama: str
-    bobot: Decimal
+    bobot: float
     wajib: bool
     parameter_1: str
     parameter_2: str
@@ -65,15 +64,15 @@ class BuktiOut(Schema):
     nomor: int
     variabel: str
     nama_indikator: str
-    bobot: Decimal
+    bobot: float
     wajib: bool
     parameter_1: str
     parameter_2: str
     parameter_3: str
     pilihan: int
     basis_ukur: str = ""
-    skor: Decimal
-    skor_maks: Decimal
+    skor: float
+    skor_maks: float
     catatan: str = ""
     tautan: str = ""
     berkas_url: Optional[str] = None
@@ -100,14 +99,14 @@ class NilaiSPDOut(Schema):
     kode: str
     variabel: str
     nama: str
-    bobot: Decimal
+    bobot: float
     wajib: bool
     parameter_1: str
     parameter_2: str
     parameter_3: str
     pilihan: int
-    skor: Decimal
-    skor_maks: Decimal
+    skor: float
+    skor_maks: float
     keterangan: str = ""
     tautan: str = ""
 
@@ -129,8 +128,8 @@ class InovasiIn(Schema):
     jenis: str = "non_digital"
     bentuk: str = "pelayanan_publik"
     urusan: str = ""
-    lintang: Optional[Decimal] = None
-    bujur: Optional[Decimal] = None
+    lintang: Optional[float] = None
+    bujur: Optional[float] = None
     asta_cita: str = ""
     pkpn_klaster: str = ""
     pkpn_program: str = ""
@@ -141,7 +140,7 @@ class InovasiIn(Schema):
     tujuan: str = ""
     manfaat: str = ""
     hasil: str = ""
-    anggaran: Optional[Decimal] = None
+    anggaran: Optional[float] = None
     sumber_anggaran: str = ""
     pic_nama: str = ""
     pic_kontak: str = ""
@@ -157,8 +156,8 @@ class InovasiRingkas(Schema):
     bentuk: str
     urusan: str
     status: str
-    skor_klaim: Decimal
-    skor_terverifikasi: Decimal
+    skor_klaim: float
+    skor_terverifikasi: float
     persen_terverifikasi: int
     layak: bool
     diperbarui_pada: datetime
@@ -172,7 +171,7 @@ class InovasiDetail(InovasiRingkas):
     tujuan: str
     manfaat: str
     hasil: str
-    anggaran: Optional[Decimal] = None
+    anggaran: Optional[float] = None
     sumber_anggaran: str
     pic_nama: str
     pic_kontak: str
@@ -182,8 +181,8 @@ class InovasiDetail(InovasiRingkas):
     diverifikasi_pada: Optional[datetime] = None
     nama_inisiator: str
     klasifikasi: str
-    lintang: Optional[Decimal] = None
-    bujur: Optional[Decimal] = None
+    lintang: Optional[float] = None
+    bujur: Optional[float] = None
     asta_cita: str
     pkpn_klaster: str
     pkpn_program: str
@@ -211,13 +210,13 @@ class ProyeksiOut(Schema):
     jumlah_inovasi: int
     pembagi: int
     kursi_kosong: int
-    skor_spd: Decimal
-    skor_spd_maks: Decimal
-    rata_kematangan: Decimal
-    skor_jumlah_inovasi: Decimal
-    skor_sid: Decimal
-    skor_total: Decimal
-    indeks: Decimal
+    skor_spd: float
+    skor_spd_maks: float
+    rata_kematangan: float
+    skor_jumlah_inovasi: float
+    skor_sid: float
+    skor_total: float
+    indeks: float
     kategori: str
     yandas_terpenuhi: int
     yandas_kurang: int
@@ -245,8 +244,8 @@ class RekapOPDOut(Schema):
     jumlah: int
     terverifikasi: int
     layak: int
-    rata_skor_klaim: Decimal
-    rata_skor_terverifikasi: Decimal
+    rata_skor_klaim: float
+    rata_skor_terverifikasi: float
 
 
 class PesanOut(Schema):

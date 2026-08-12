@@ -1,6 +1,6 @@
 # SIMONDA Rote Ndao
 
-Sistem monitoring inovasi daerah Kabupaten Rote Ndao. Dipakai sepanjang tahun untuk
+Sistem Monitoring Inovasi Daerah Kabupaten Rote Ndao. Dipakai sepanjang tahun untuk
 mengumpulkan inovasi dan mencicil bukti dukungnya, supaya saat window pelaporan
 Innovative Government Award (IGA) dibuka, datanya tinggal disalin.
 
@@ -10,7 +10,7 @@ Django 5 + Django Ninja di belakang, React di depan.
 
 ## Alur kerja
 
-    Operator OPD                  Verifikator (Bappelitbangda)
+    Operator OPD                  Verifikator (Bapperida)
     ────────────                  ────────────────────────────
     buat inovasi (draft)
     isi bukti 21 indikator
@@ -43,11 +43,11 @@ Tiap indikator punya tiga parameter. Skor satu baris = bobot x parameter terpili
 
 ## Tiga aturan yang menentukan skor
 
-**Minimal 5 dari 6 urusan wajib pelayanan dasar.** Kurang dari itu, Skor Jumlah
-Inovasi jadi nol — hilang sampai 76 poin atau 30,4% dari skor maksimum. Beranda
-menampilkan urusan mana yang masih kosong.
+**Seluruh 6 urusan wajib pelayanan dasar harus terpenuhi.** Kurang satu saja,
+Skor Jumlah Inovasi jadi nol — hilang sampai 76 poin atau 30,4% dari skor
+maksimum. Beranda menampilkan urusan mana yang masih kosong.
 
-**Pembagi MAX(12, n).** Melaporkan kurang dari 12 inovasi tetap dibagi 12, jadi
+**Pembagi MAX(14, n).** Melaporkan kurang dari 14 inovasi tetap dibagi 14, jadi
 rata-rata kematangan ikut turun. Sistem menampilkan berapa "kursi kosong" tersisa.
 
 **Syarat umur inovasi.** Penerapan harus antara 1 Januari 2024 dan 31 Desember
@@ -91,7 +91,7 @@ EOF
 python -c "import secrets; print(secrets.token_urlsafe(50))"   # isi SECRET_KEY
 
 python manage.py migrate
-python manage.py seed_simonda --tahun 2026    # catat kata sandi yang dicetak
+python manage.py seed_simonda --tahun 2027    # catat kata sandi yang dicetak
 python manage.py runserver
 ```
 
@@ -112,7 +112,7 @@ npm run dev                    # http://localhost:5173
 ```
 
 React 18 dan Vite 7, tanpa pustaka UI atau router tambahan. Butuh Node 20.19 ke
-atas. Gaya ditulis tangan di `src/gaya.css` memakai variabel CSS, dan tidak ada
+atas. Gaya ditulis tangan di `src/index.css` memakai variabel CSS, dan tidak ada
 font web supaya tetap terbaca saat jaringan kantor putus.
 
 Bila npm menahan skrip `postinstall` milik esbuild dengan peringatan
@@ -131,12 +131,12 @@ cd backend
 export ALLOWED_HOSTS=localhost,127.0.0.1,testserver
 python uji_skor.py        # 32 pemeriksaan katalog dan rumus
 python uji_alur.py        # 39 pemeriksaan alur kerja
-python uji_kontrak.py     # 41 pemeriksaan kontrak API terhadap antarmuka
+python uji_kontrak.py     # 40 pemeriksaan kontrak API terhadap antarmuka
 ```
 
 `uji_skor.py` membuktikan ulang angka resmi pedoman dari bobot yang dimasukkan.
 `uji_alur.py` menguji isolasi antar OPD, penguncian saat menunggu verifikasi,
-pemeriksaan kelayakan, aturan 5 dari 6 urusan, pembagi MAX(12, n), selisih klaim
+pemeriksaan kelayakan, aturan 6 dari 6 urusan, pembagi MAX(14, n), selisih klaim
 versus terverifikasi, dan ekspor CSV.
 `uji_kontrak.py` memastikan setiap kolom yang dibaca berkas `.jsx` benar-benar
 ada di respons API — inilah yang biasanya jebol saat backend diubah tetapi
@@ -179,9 +179,10 @@ Satu operator per OPD sudah cukup untuk awal. Tambah bila perlu.
 (63 / 111 / 76 / 250 dan proporsi 25,20% / 44,40% / 30,40%). Jalankan uji itu
 setiap kali katalog disunting.
 
-Untuk tahun berikutnya, ubah `PEMBAGI_MINIMAL` dan `MIN_URUSAN_YANDAS` di
-`iga.py` sesuai tabel prognosis: pembagi 14 pada 2027, 16 pada 2028, 18 pada
-2029; urusan yandas naik jadi 6 mulai 2027.
+Sistem ini sudah dikonfigurasi untuk tahun 2027 (`PEMBAGI_MINIMAL=14`,
+`MIN_URUSAN_YANDAS=6` — seluruh 6 urusan yandas wajib terpenuhi, tidak ada
+slack). Untuk tahun berikutnya, ubah dua konstanta itu di `iga.py` sesuai tabel
+prognosis: pembagi 16 pada 2028, 18 pada 2029.
 
 **Cocokkan daftar OPD** dengan SOTK Rote Ndao yang berlaku. Daftar di
 `seed_simonda.py` masih perkiraan.

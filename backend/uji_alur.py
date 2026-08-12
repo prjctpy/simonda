@@ -3,7 +3,6 @@
     DEBUG=1 SECRET_KEY=... ALLOWED_HOSTS=localhost,testserver python uji_alur.py
 """
 import os
-from datetime import date
 
 import django
 
@@ -42,19 +41,17 @@ def masuk(nama):
 
 print("\n== Menyiapkan akun ==")
 periode = Periode.objects.get(aktif=True)
-periode.window_buka, periode.window_tutup = date(2026, 6, 1), date(2026, 8, 31)
-periode.save()
 
 User.objects.filter(username__startswith="uji_").delete()
 Inovasi.objects.all().delete()
 dinkes, distan = OPD.objects.get(kode="DINKES"), OPD.objects.get(kode="DISTAN")
-bappe = OPD.objects.get(kode="BAPPELITBANGDA")
+bappe = OPD.objects.get(kode="BAPPERIDA")
 User.objects.create_user("uji_dinkes", password=SANDI, peran=User.OPERATOR, opd=dinkes)
 User.objects.create_user("uji_distan", password=SANDI, peran=User.OPERATOR, opd=distan)
 User.objects.create_user("uji_verif", password=SANDI, peran=User.VERIFIKATOR, opd=bappe)
 t_op, t_op2, t_vr = masuk("uji_dinkes"), masuk("uji_distan"), masuk("uji_verif")
-print(f"  window {periode.window_buka} s.d. {periode.window_tutup}, "
-      f"sisa {periode.hari_tersisa} hari")
+print(f"  periode {periode.tahun}, pembagi minimal {periode.pembagi_minimal}, "
+      f"minimal {periode.min_urusan_yandas} urusan yandas")
 
 sid = list(Indikator.objects.filter(periode=periode, aspek="sid").order_by("nomor"))
 spd = list(Indikator.objects.filter(periode=periode, aspek="spd").order_by("nomor", "sub"))
@@ -151,10 +148,10 @@ for ind in sid:
 cek("skor terverifikasi 111",
     float(c.get(f"/api/inovasi/{inv_id}", **kepala(t_vr)).json()["skor_terverifikasi"]) == 111.0)
 
-print("\n== Aturan 5 dari 6 urusan wajib pelayanan dasar ==")
+print("\n== Aturan 6 dari 6 urusan wajib pelayanan dasar ==")
 pr = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
 cek("baru 1 urusan yandas", pr["yandas_terpenuhi"] == 1, pr["yandas_terpenuhi"])
-cek("kurang 4 urusan", pr["yandas_kurang"] == 4)
+cek("kurang 5 urusan", pr["yandas_kurang"] == 5)
 cek("skor jumlah inovasi masih nol", float(pr["skor_jumlah_inovasi"]) == 0)
 cek("5 urusan yandas dilaporkan kosong", len(pr["yandas_kosong"]) == 5)
 print(f"       indeks sekarang: {pr['indeks']} ({pr['kategori']})")
@@ -177,24 +174,25 @@ def buat_lengkap(nama, urusan, token):
     return iid
 
 
-# SIPADU sudah memakai Kesehatan, jadi empat urusan berikut melengkapinya jadi lima.
-for n, urusan in enumerate(iga.URUSAN_YANDAS[2:6], 1):
+# SIPADU sudah memakai Kesehatan, jadi lima urusan berikut melengkapinya jadi enam (semua).
+urusan_pelengkap = iga.URUSAN_YANDAS[:1] + iga.URUSAN_YANDAS[2:]
+for n, urusan in enumerate(urusan_pelengkap, 1):
     buat_lengkap(f"Inovasi yandas {n}", urusan, t_op)
-pr5 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
-cek("5 urusan yandas terpenuhi", pr5["yandas_terpenuhi"] == 5, pr5["yandas_terpenuhi"])
-cek("skor jumlah inovasi terbuka", float(pr5["skor_jumlah_inovasi"]) > 0)
-print(f"       setelah 5 urusan terpenuhi: {pr5['indeks']} ({pr5['kategori']})")
-print(f"       lompatan: +{float(pr5['indeks']) - float(pr['indeks']):.2f} poin indeks")
+pr6 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
+cek("6 urusan yandas terpenuhi", pr6["yandas_terpenuhi"] == 6, pr6["yandas_terpenuhi"])
+cek("skor jumlah inovasi terbuka", float(pr6["skor_jumlah_inovasi"]) > 0)
+print(f"       setelah 6 urusan terpenuhi: {pr6['indeks']} ({pr6['kategori']})")
+print(f"       lompatan: +{float(pr6['indeks']) - float(pr['indeks']):.2f} poin indeks")
 
-print("\n== Pembagi MAX(12, n) ==")
-cek("5 inovasi tetap dibagi 12", pr5["pembagi"] == 12, pr5["pembagi"])
-cek("7 kursi kosong terdeteksi", pr5["kursi_kosong"] == 7, pr5["kursi_kosong"])
-for n in range(7):
+print("\n== Pembagi MAX(14, n) ==")
+cek("6 inovasi tetap dibagi 14", pr6["pembagi"] == 14, pr6["pembagi"])
+cek("8 kursi kosong terdeteksi", pr6["kursi_kosong"] == 8, pr6["kursi_kosong"])
+for n in range(8):
     buat_lengkap(f"Inovasi tambahan {n}", "Pariwisata", t_op2)
-pr12 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
-cek("12 inovasi, tidak ada kursi kosong", pr12["kursi_kosong"] == 0)
-cek("indeks naik tajam", float(pr12["indeks"]) > float(pr5["indeks"]))
-print(f"        5 inovasi: {pr5['indeks']}   12 inovasi: {pr12['indeks']}")
+pr14 = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()["proyeksi_terverifikasi"]
+cek("14 inovasi, tidak ada kursi kosong", pr14["kursi_kosong"] == 0)
+cek("indeks naik tajam", float(pr14["indeks"]) > float(pr6["indeks"]))
+print(f"        6 inovasi: {pr6['indeks']}   14 inovasi: {pr14['indeks']}")
 
 print("\n== Klaim versus terverifikasi ==")
 ragu = buat_lengkap("Inovasi belum diverifikasi", "Perhubungan", t_op)
@@ -211,7 +209,6 @@ cek("proyeksi klaim lebih tinggi dari terverifikasi",
     float(ring["proyeksi_klaim"]["indeks"]) > float(ring["proyeksi_terverifikasi"]["indeks"]))
 print(f"       klaim OPD      : {ring['proyeksi_klaim']['indeks']}")
 print(f"       terverifikasi  : {ring['proyeksi_terverifikasi']['indeks']}")
-print(f"       sisa hari      : {ring['hari_menuju_tutup']}")
 
 print("\n== Ekspor ==")
 r = c.get("/api/ekspor/iga", **kepala(t_vr))

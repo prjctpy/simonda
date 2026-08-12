@@ -4,6 +4,7 @@ import { LayoutDashboard, Lightbulb, FileSpreadsheet, BarChart3, LogIn, LogOut, 
 
 interface NavbarProps {
   user: UserProfile | null;
+  tahun: number | null;
   activeTab: 'dashboard' | 'inovasi' | 'spd' | 'rekap';
   setActiveTab: (tab: 'dashboard' | 'inovasi' | 'spd' | 'rekap') => void;
   onOpenLogin: () => void;
@@ -12,6 +13,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
+  tahun,
   activeTab,
   setActiveTab,
   onOpenLogin,
@@ -30,9 +32,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-extrabold text-lg tracking-tight text-white">SIMONDA</span>
-                <span className="text-xs bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-emerald-500/30">
-                  IGA 2026
-                </span>
+                {tahun && (
+                  <span className="text-xs bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-emerald-500/30">
+                    IGA {tahun}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 font-medium hidden sm:block">
                 Kabupaten Rote Ndao &bull; Nusa Tenggara Timur

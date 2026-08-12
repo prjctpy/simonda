@@ -44,7 +44,7 @@ def kepala(t):
 
 print("\n== Menyiapkan data ==")
 periode = Periode.objects.get(aktif=True)
-periode.window_buka, periode.window_tutup = date(2026, 6, 1), date(2026, 8, 31)
+periode.window_buka, periode.window_tutup = date(2027, 6, 1), date(2027, 8, 31)
 periode.save()
 User.objects.filter(username__startswith="kon_").delete()
 Inovasi.objects.all().delete()
@@ -53,7 +53,7 @@ opd = OPD.objects.get(kode="DINKES")
 User.objects.create_user("kon_opd", password=SANDI, peran=User.OPERATOR, opd=opd,
                          first_name="Operator", last_name="Dinkes")
 User.objects.create_user("kon_verif", password=SANDI, peran=User.VERIFIKATOR,
-                         opd=OPD.objects.get(kode="BAPPELITBANGDA"), first_name="Verifikator")
+                         opd=OPD.objects.get(kode="BAPPERIDA"), first_name="Verifikator")
 
 
 def masuk(n):
@@ -91,7 +91,7 @@ print("\n== Beranda.jsx ==")
 r = c.get("/api/statistik/ringkasan", **kepala(t_vr)).json()
 punya("ringkasan", r, ["tahun", "total_inovasi", "layak", "menunggu_verifikasi",
                        "terverifikasi", "opd_terlibat", "opd_belum_lapor",
-                       "hari_menuju_tutup", "proyeksi_klaim", "proyeksi_terverifikasi",
+                       "proyeksi_klaim", "proyeksi_terverifikasi",
                        "per_tahapan", "per_bentuk"])
 punya("proyeksi", r["proyeksi_klaim"],
       ["jumlah_inovasi", "pembagi", "kursi_kosong", "skor_spd", "rata_kematangan",
@@ -102,8 +102,6 @@ cek("kategori salah satu dari empat",
     r["proyeksi_klaim"]["kategori"] in
     ("Sangat Inovatif", "Inovatif", "Kurang Inovatif", "Tidak Dapat Dinilai"),
     r["proyeksi_klaim"]["kategori"])
-cek("hari_menuju_tutup berupa angka", isinstance(r["hari_menuju_tutup"], int),
-    r["hari_menuju_tutup"])
 cek("yandas_kosong daftar teks",
     all(isinstance(u, str) for u in r["proyeksi_klaim"]["yandas_kosong"]))
 

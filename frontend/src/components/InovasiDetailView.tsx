@@ -225,7 +225,7 @@ export const InovasiDetailView: React.FC<InovasiDetailViewProps> = ({
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
             <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs">
               <ShieldCheck className="w-4 h-4 text-amber-600" />
-              <span>Inovasi Menunggu Keputusan Verifikator Bappelitbangda</span>
+              <span>Inovasi Menunggu Keputusan Verifikator Bapperida</span>
             </div>
             <textarea
               placeholder="Tulis catatan atau arahan perbaikan bila dikembalikan..."
@@ -531,7 +531,7 @@ export const InovasiDetailView: React.FC<InovasiDetailViewProps> = ({
               <div className="p-4 bg-slate-900 text-white rounded-xl space-y-3 mt-4">
                 <div className="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Panel Verifikasi Parameter oleh Bappelitbangda</span>
+                  <span>Panel Verifikasi Parameter oleh Bapperida</span>
                 </div>
 
                 <div className="flex items-center space-x-4 text-xs">

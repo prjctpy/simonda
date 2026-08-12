@@ -53,10 +53,10 @@ class Periode(models.Model):
     window_tutup = models.DateField(null=True, blank=True)
     pembagi_minimal = models.PositiveSmallIntegerField(
         default=iga.PEMBAGI_MINIMAL,
-        help_text="Jumlah inovasi pembagi rata-rata kematangan. 12 pada 2026.")
+        help_text="Jumlah inovasi pembagi rata-rata kematangan. 14 pada 2027, naik ke 16 (2028), 18 (2029).")
     min_urusan_yandas = models.PositiveSmallIntegerField(
         default=iga.MIN_URUSAN_YANDAS,
-        help_text="Urusan wajib pelayanan dasar minimal. 5 pada 2026, 6 pada 2027.")
+        help_text="Urusan wajib pelayanan dasar minimal. 6 (seluruhnya) mulai 2027.")
     aktif = models.BooleanField(default=False)
     catatan = models.TextField(blank=True)
 
@@ -67,12 +67,6 @@ class Periode(models.Model):
         super().save(*args, **kwargs)
         if self.aktif:
             Periode.objects.exclude(pk=self.pk).update(aktif=False)
-
-    @property
-    def hari_tersisa(self):
-        if not self.window_tutup:
-            return None
-        return (self.window_tutup - date.today()).days
 
     def __str__(self):
         return f"Periode {self.tahun}"

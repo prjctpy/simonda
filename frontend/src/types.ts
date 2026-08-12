@@ -24,7 +24,6 @@ export interface Periode {
   min_urusan_yandas: number;
   aktif: boolean;
   catatan?: string;
-  hari_tersisa?: number | null;
 }
 
 export interface Indikator {
@@ -158,7 +157,6 @@ export interface RingkasanStatistik {
   terverifikasi: number;
   opd_terlibat: number;
   opd_belum_lapor: number;
-  hari_menuju_tutup?: number | null;
   proyeksi_klaim: ProyeksiHitungan;
   proyeksi_terverifikasi: ProyeksiHitungan;
   per_tahapan: { label: string; jumlah: number }[];

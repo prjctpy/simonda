@@ -11,7 +11,7 @@ from inovasi.models import OPD, Indikator, Periode, User
 DAFTAR_OPD = [
     ("SETDA", "Sekretariat Daerah"),
     ("SETWAN", "Sekretariat DPRD"),
-    ("BAPPELITBANGDA", "Badan Perencanaan Pembangunan, Penelitian dan Pengembangan Daerah"),
+    ("BAPPERIDA", "Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah"),
     ("BKAD", "Badan Keuangan dan Aset Daerah"),
     ("BKPSDM", "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia"),
     ("INSPEKTORAT", "Inspektorat Daerah"),

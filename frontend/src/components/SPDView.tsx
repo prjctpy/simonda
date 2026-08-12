@@ -65,7 +65,7 @@ export const SPDView: React.FC<SPDViewProps> = ({ spdData, onUpdateSpd }) => {
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">15 Indikator SPD Kabupaten</h1>
           <p className="text-xs text-slate-500 mt-1 max-w-xl">
             20 baris skor institusi, SDM, dan ekosistem inovasi tingkat daerah. Diisi langsung oleh
-            Bappelitbangda, satu nilai per periode &mdash; tidak melalui alur klaim/verifikasi terpisah.
+            Bapperida, satu nilai per periode &mdash; tidak melalui alur klaim/verifikasi terpisah.
           </p>
         </div>
 

@@ -4,7 +4,6 @@ import {
   Trophy,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   Building2,
   Download,
   PlusCircle,
@@ -39,6 +38,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const p = stats.proyeksi_terverifikasi;
   const pKlaim = stats.proyeksi_klaim;
+  const totalYandas = p.yandas_terisi.length + p.yandas_kosong.length;
+  const minYandas = p.yandas_terpenuhi + p.yandas_kurang;
 
   const isSangatInovatif = p.indeks >= 65.01;
   const isInovatif = p.indeks >= 40.01 && p.indeks < 65.01;
@@ -59,7 +60,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Proyeksi Indeks Inovasi Daerah Rote Ndao
             </h1>
             <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-              Sistem perhitungan otomatis Indeks Inovasi Daerah berbasis Peraturan Kepala BSKDN Kemendagri 2026.
+              Sistem perhitungan otomatis Indeks Inovasi Daerah berbasis Peraturan Kepala BSKDN Kemendagri.
             </p>
           </div>
 
@@ -182,7 +183,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-300 font-medium">Urusan Wajib Pelayanan Dasar</span>
                 <span className={`font-bold ${p.yandas_kurang === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {p.yandas_terpenuhi} dari 5 Terpenuhi
+                  {p.yandas_terpenuhi} dari {totalYandas} Terpenuhi
                 </span>
               </div>
 
@@ -192,13 +193,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     &bull; Kurang {p.yandas_kurang} Urusan Pelayanan Dasar!
                   </p>
                   <p className="text-[11px] text-slate-300">
-                    Bila &lt; 5 urusan wajib, seluruh <b>76 poin (30.4%)</b> skor Jumlah Inovasi menjadi NOL.
+                    Bila &lt; {minYandas} urusan wajib, seluruh <b>76 poin (30.4%)</b> skor Jumlah Inovasi menjadi NOL.
                   </p>
                 </div>
               ) : (
                 <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Sebaran 5 urusan wajib pelayanan dasar telah terpenuhi sempurna!</span>
+                  <span>Sebaran {totalYandas} urusan wajib pelayanan dasar telah terpenuhi sempurna!</span>
                 </div>
               )}
             </div>
@@ -206,7 +207,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Urusan Yandas Checklist */}
             <div className="space-y-1.5 text-xs">
               <span className="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">
-                Checklist 6 Urusan Yandas:
+                Checklist {totalYandas} Urusan Yandas:
               </span>
               <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                 {p.yandas_terisi.map((u) => (
@@ -233,8 +234,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
             <FileCheck className="w-5 h-5" />
@@ -272,18 +273,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="text-xs text-slate-500 font-semibold">OPD Lapor</div>
             <div className="text-2xl font-extrabold text-slate-900">{stats.opd_terlibat}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3 col-span-2 sm:col-span-1">
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-semibold">Sisa Pelaporan</div>
-            <div className="text-xl font-extrabold text-rose-600">
-              {stats.hari_menuju_tutup !== null ? `${stats.hari_menuju_tutup} Hari` : '-'}
-            </div>
           </div>
         </div>
 

@@ -172,7 +172,7 @@ export default function App() {
       const updated = await fetchInovasiDetail(selectedInovasiDetail.id);
       setSelectedInovasiDetail(updated);
       await loadInitialData();
-      alert('Inovasi berhasil diajukan ke Bappelitbangda!');
+      alert('Inovasi berhasil diajukan ke Bapperida!');
     } catch (e: any) {
       alert(e.message || 'Gagal mengajukan inovasi.');
     }
@@ -257,6 +257,7 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         user={user}
+        tahun={stats?.tahun ?? null}
         activeTab={activeTab}
         setActiveTab={(t) => {
           setSelectedInovasiId(null);
@@ -277,7 +278,7 @@ export default function App() {
             <h1 className="text-xl font-extrabold text-slate-900">Masuk untuk melihat data SIMONDA</h1>
             <p className="text-sm text-slate-500">
               Data inovasi daerah bersifat internal Pemkab Rote Ndao. Masuk dengan akun operator OPD
-              atau verifikator Bappelitbangda untuk melanjutkan.
+              atau verifikator Bapperida untuk melanjutkan.
             </p>
             <button
               onClick={() => setShowLoginModal(true)}
@@ -347,9 +348,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-white">SIMONDA Rote Ndao</span>
-            <span>&bull; Sistem Informasi Monitoring &amp; Analisis Inovasi Daerah</span>
+            <span>&bull; Sistem Monitoring Inovasi Daerah</span>
           </div>
-          <div>&copy; {new Date().getFullYear()} Bappelitbangda Kabupaten Rote Ndao &bull; IGA Kemendagri</div>
+          <div>&copy; {new Date().getFullYear()} Bapperida Kabupaten Rote Ndao &bull; IGA Kemendagri</div>
         </div>
       </footer>
 

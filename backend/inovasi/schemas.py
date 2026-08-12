@@ -232,7 +232,6 @@ class RingkasanOut(Schema):
     terverifikasi: int
     opd_terlibat: int
     opd_belum_lapor: int
-    hari_menuju_tutup: Optional[int] = None
     proyeksi_klaim: ProyeksiOut
     proyeksi_terverifikasi: ProyeksiOut
     per_tahapan: List[HitunganOut]

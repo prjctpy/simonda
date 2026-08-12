@@ -407,7 +407,6 @@ def ringkasan(request):
         "opd_terlibat": len({i.opd_id for i in qs}),
         "opd_belum_lapor": OPD.objects.filter(aktif=True).exclude(
             id__in={i.opd_id for i in qs}).count(),
-        "hari_menuju_tutup": p.hari_tersisa,
         "proyeksi_klaim": proyeksi(p, qs, False),
         "proyeksi_terverifikasi": proyeksi(p, qs, True),
         "per_tahapan": hitung("tahapan", Inovasi.TAHAPAN),

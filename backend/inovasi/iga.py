@@ -142,8 +142,8 @@ MAKS_TOTAL = Decimal("250")
 
 BOBOT_JUMLAH_INOVASI = Decimal("0.38")
 BATAS_INOVASI = 200
-PEMBAGI_MINIMAL = 12          # tahun 2026; naik jadi 14 (2027), 16 (2028), 18 (2029)
-MIN_URUSAN_YANDAS = 5         # tahun 2026; naik jadi 6 pada 2027
+PEMBAGI_MINIMAL = 14          # tahun 2027; naik jadi 16 (2028), 18 (2029)
+MIN_URUSAN_YANDAS = 6         # tahun 2027 ke atas, seluruh 6 urusan yandas wajib terpenuhi
 
 URUSAN_YANDAS = [
     "Pendidikan",

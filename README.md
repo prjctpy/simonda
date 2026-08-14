@@ -130,14 +130,15 @@ sebagai berkas statis di depan Gunicorn.
 cd backend
 export ALLOWED_HOSTS=localhost,127.0.0.1,testserver
 python uji_skor.py        # 32 pemeriksaan katalog dan rumus
-python uji_alur.py        # 39 pemeriksaan alur kerja
+python uji_alur.py        # 51 pemeriksaan alur kerja
 python uji_kontrak.py     # 40 pemeriksaan kontrak API terhadap antarmuka
 ```
 
 `uji_skor.py` membuktikan ulang angka resmi pedoman dari bobot yang dimasukkan.
 `uji_alur.py` menguji isolasi antar OPD, penguncian saat menunggu verifikasi,
 pemeriksaan kelayakan, aturan 6 dari 6 urusan, pembagi MAX(14, n), selisih klaim
-versus terverifikasi, dan ekspor CSV.
+versus terverifikasi, ekspor CSV, dan alur Kelola Akun OPD (verifikator membuat,
+menonaktifkan/mengaktifkan, dan mereset sandi akun operator).
 `uji_kontrak.py` memastikan setiap kolom yang dibaca berkas `.jsx` benar-benar
 ada di respons API — inilah yang biasanya jebol saat backend diubah tetapi
 frontend belum menyusul.
@@ -154,20 +155,27 @@ menghapus seluruh inovasi saat mulai.
 | Antrean verifikasi | verifikator | Inovasi berstatus menunggu, dengan lencana jumlah |
 | Indikator daerah | verifikator | 20 baris SPD, dikelompokkan per variabel |
 | Rekap OPD | verifikator | Rata skor per OPD dan daftar yang belum melapor |
+| Kelola Akun | verifikator | Buat, nonaktifkan/aktifkan, dan reset sandi akun operator OPD |
 
 ---
 
 ## Membuat akun OPD
 
-Lewat `/admin/` → Users → Add. Isi peran dan OPD:
+`seed_simonda` sudah langsung membuat satu akun operator per OPD (username =
+kode OPD huruf kecil, sandi awal `admin123` untuk semua — **wajib diganti**
+sebelum dipakai sungguhan).
+
+Akun operator baru berikutnya dibuat verifikator sendiri dari dalam SIMONDA,
+lewat menu **Kelola Akun** (bisa buat, lihat daftar, nonaktifkan/aktifkan, dan
+reset sandi — tanpa perlu Django Admin). Akun `verifikator`/`admin` baru tetap
+lewat `/admin/` → Users → Add, karena itu batas kepercayaan yang lebih tinggi
+dan bukan tugas rutin.
 
 | Peran | Bisa apa |
 |---|---|
 | Operator OPD | Hanya inovasi OPD-nya sendiri. Tidak bisa memverifikasi. |
-| Verifikator | Melihat semua OPD, memverifikasi, mengekspor. |
+| Verifikator | Melihat semua OPD, memverifikasi, mengekspor, kelola akun operator. |
 | Administrator | Semua di atas, plus Django admin. |
-
-Satu operator per OPD sudah cukup untuk awal. Tambah bila perlu.
 
 ---
 
@@ -184,8 +192,9 @@ Sistem ini sudah dikonfigurasi untuk tahun 2027 (`PEMBAGI_MINIMAL=14`,
 slack). Untuk tahun berikutnya, ubah dua konstanta itu di `iga.py` sesuai tabel
 prognosis: pembagi 16 pada 2028, 18 pada 2029.
 
-**Cocokkan daftar OPD** dengan SOTK Rote Ndao yang berlaku. Daftar di
-`seed_simonda.py` masih perkiraan.
+**Daftar OPD** di `seed_simonda.py` sudah memuat 45 perangkat daerah Rote Ndao.
+Cek ulang terhadap Perda SOTK yang berlaku bila ada pemekaran/penggabungan OPD
+setelahnya.
 
 **Ganti SECRET_KEY** dan kata sandi administrator hasil seed.
 

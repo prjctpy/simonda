@@ -7,6 +7,7 @@ import {
   OPD,
   NilaiSPD,
   RekapOPD,
+  AkunOPD,
 } from './types';
 import {
   fetchProfile,
@@ -28,6 +29,11 @@ import {
   fetchRekapOpd,
   fetchOpdList,
   exportIgaCsv,
+  fetchAkunOpdList,
+  createAkunOpd,
+  nonaktifkanAkun,
+  aktifkanAkun,
+  resetSandiAkun,
 } from './api';
 
 import { Navbar } from './components/Navbar';
@@ -36,12 +42,13 @@ import { InovasiListView } from './components/InovasiListView';
 import { InovasiDetailView } from './components/InovasiDetailView';
 import { SPDView } from './components/SPDView';
 import { RekapOPDView } from './components/RekapOPDView';
+import { KelolaAkunView } from './components/KelolaAkunView';
 import { InovasiFormModal } from './components/InovasiFormModal';
 import { LoginModal } from './components/LoginModal';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inovasi' | 'spd' | 'rekap'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inovasi' | 'spd' | 'rekap' | 'akun'>('dashboard');
 
   // Main state collections
   const [stats, setStats] = useState<RingkasanStatistik | null>(null);
@@ -49,6 +56,7 @@ export default function App() {
   const [opdList, setOpdList] = useState<OPD[]>([]);
   const [spdData, setSpdData] = useState<NilaiSPD[] | null>(null);
   const [rekapList, setRekapList] = useState<RekapOPD[]>([]);
+  const [akunList, setAkunList] = useState<AkunOPD[]>([]);
 
   // Selected item detail state
   const [selectedInovasiId, setSelectedInovasiId] = useState<number | null>(null);
@@ -76,6 +84,7 @@ export default function App() {
         setOpdList([]);
         setSpdData(null);
         setRekapList([]);
+        setAkunList([]);
         return;
       }
 
@@ -90,12 +99,14 @@ export default function App() {
       setOpdList(opds);
 
       if (uProfile.bisa_verifikasi) {
-        const [spd, rkp] = await Promise.all([fetchSpdData(), fetchRekapOpd()]);
+        const [spd, rkp, akun] = await Promise.all([fetchSpdData(), fetchRekapOpd(), fetchAkunOpdList()]);
         setSpdData(spd);
         setRekapList(rkp);
+        setAkunList(akun);
       } else {
         setSpdData(null);
         setRekapList([]);
+        setAkunList([]);
       }
     } catch (e) {
       console.error('Failed loading initial data', e);
@@ -239,6 +250,34 @@ export default function App() {
     }
   };
 
+  // Kelola Akun OPD (khusus verifikator/admin)
+  const handleCreateAkun = async (data: {
+    username: string;
+    password: string;
+    nama_depan?: string;
+    opd_id: number;
+    nip?: string;
+    telepon?: string;
+  }) => {
+    await createAkunOpd(data);
+    await loadInitialData();
+  };
+
+  const handleNonaktifkanAkun = async (id: number) => {
+    await nonaktifkanAkun(id);
+    await loadInitialData();
+  };
+
+  const handleAktifkanAkun = async (id: number) => {
+    await aktifkanAkun(id);
+    await loadInitialData();
+  };
+
+  const handleResetSandi = async (id: number, password: string) => {
+    await resetSandiAkun(id, password);
+    await loadInitialData();
+  };
+
   if (loading && !stats) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
@@ -338,6 +377,15 @@ export default function App() {
               setSelectedInovasiId(id);
               setActiveTab('inovasi');
             }}
+          />
+        ) : activeTab === 'akun' ? (
+          <KelolaAkunView
+            akunList={akunList}
+            opdList={opdList}
+            onCreate={handleCreateAkun}
+            onNonaktifkan={handleNonaktifkanAkun}
+            onAktifkan={handleAktifkanAkun}
+            onResetSandi={handleResetSandi}
           />
         ) : null}
 

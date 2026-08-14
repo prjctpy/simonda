@@ -6,6 +6,7 @@ import {
   OPD,
   NilaiSPD,
   RekapOPD,
+  AkunOPD,
 } from './types';
 
 export const URUSAN = [
@@ -249,6 +250,54 @@ export async function fetchOpdList(): Promise<OPD[]> {
   const res = await fetch(`${API_BASE}/api/opd`, { headers: getHeaders() });
   if (!res.ok) throw new Error(await extractError(res, 'Gagal mengambil daftar OPD'));
   return await res.json();
+}
+
+export async function fetchAkunOpdList(): Promise<AkunOPD[]> {
+  const res = await fetch(`${API_BASE}/api/akun-opd`, { headers: getHeaders() });
+  if (!res.ok) throw new Error(await extractError(res, 'Gagal mengambil daftar akun OPD'));
+  return await res.json();
+}
+
+export async function createAkunOpd(data: {
+  username: string;
+  password: string;
+  nama_depan?: string;
+  opd_id: number;
+  nip?: string;
+  telepon?: string;
+}): Promise<AkunOPD> {
+  const res = await fetch(`${API_BASE}/api/akun-opd`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await extractError(res, 'Gagal membuat akun OPD'));
+  return await res.json();
+}
+
+export async function nonaktifkanAkun(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/akun-opd/${id}/nonaktifkan`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await extractError(res, 'Gagal menonaktifkan akun'));
+}
+
+export async function aktifkanAkun(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/akun-opd/${id}/aktifkan`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(await extractError(res, 'Gagal mengaktifkan akun'));
+}
+
+export async function resetSandiAkun(id: number, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/akun-opd/${id}/reset-sandi`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ password }),
+  });
+  if (!res.ok) throw new Error(await extractError(res, 'Gagal mereset sandi akun'));
 }
 
 // Ekspor resmi format IGA (hanya inovasi terverifikasi dan layak). Endpoint ini

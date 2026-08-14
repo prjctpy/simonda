@@ -31,6 +31,31 @@ class ProfilOut(Schema):
     opd: Optional[OPDRingkas] = None
 
 
+# ---------------------------- akun OPD ----------------------------
+
+class AkunOPDIn(Schema):
+    username: str
+    password: str
+    nama_depan: str = ""
+    opd_id: int
+    nip: str = ""
+    telepon: str = ""
+
+
+class AkunOPDOut(Schema):
+    id: int
+    username: str
+    nama: str
+    opd: OPDRingkas
+    nip: str = ""
+    telepon: str = ""
+    is_active: bool
+
+
+class ResetSandiIn(Schema):
+    password: str
+
+
 # ------------------------------ periode -----------------------------
 
 class PeriodeOut(Schema):

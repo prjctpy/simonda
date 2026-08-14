@@ -5,6 +5,8 @@ from typing import List, Optional
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -20,9 +22,10 @@ from . import iga
 from .models import (OPD, Indikator, Inovasi, LogAktivitas, NilaiSID, NilaiSPD,
                      Periode, User)
 from .schemas import (
-    BuktiIn, BuktiOut, HitunganOut, IndikatorOut, InovasiDetail, InovasiIn, InovasiRingkas,
-    MasukIn, NilaiSPDIn, NilaiSPDOut, OPDRingkas, PeriodeOut, PesanOut, ProfilOut,
-    RekapOPDOut, RingkasanOut, TokenOut, VerifikasiBuktiIn, VerifikasiInovasiIn,
+    AkunOPDIn, AkunOPDOut, BuktiIn, BuktiOut, HitunganOut, IndikatorOut, InovasiDetail,
+    InovasiIn, InovasiRingkas, MasukIn, NilaiSPDIn, NilaiSPDOut, OPDRingkas, PeriodeOut,
+    PesanOut, ProfilOut, RekapOPDOut, ResetSandiIn, RingkasanOut, TokenOut,
+    VerifikasiBuktiIn, VerifikasiInovasiIn,
 )
 
 MASA_TOKEN = timedelta(hours=12)
@@ -122,6 +125,80 @@ def daftar_periode(request):
 def daftar_indikator(request, periode_id: Optional[int] = None):
     p = Periode.objects.filter(id=periode_id).first() if periode_id else periode_aktif()
     return p.indikator.filter(aktif=True)
+
+
+# ------------------------------ akun OPD ------------------------------
+# Verifikator/admin ("akun daerah") membuat dan mengelola akun operator OPD
+# ("akun perangkat daerah") langsung dari SIMONDA. Akun verifikator/admin
+# sendiri tetap dibuat lewat Django Admin — batas kepercayaan lebih tinggi.
+
+def akun_ringkas(u: User) -> dict:
+    return {
+        "id": u.id, "username": u.username, "nama": u.get_full_name() or u.username,
+        "opd": {"id": u.opd.id, "kode": u.opd.kode, "nama": u.opd.nama},
+        "nip": u.nip, "telepon": u.telepon, "is_active": u.is_active,
+    }
+
+
+def validasi_sandi(password: str, user: Optional[User] = None):
+    try:
+        validate_password(password, user=user)
+    except DjangoValidationError as e:
+        raise HttpError(400, "; ".join(e.messages))
+
+
+@api.get("/akun-opd", response=List[AkunOPDOut])
+def daftar_akun_opd(request):
+    wajib_verifikator(request)
+    return [akun_ringkas(u) for u in
+            User.objects.filter(peran=User.OPERATOR).select_related("opd")
+            .order_by("opd__nama", "username")]
+
+
+@api.post("/akun-opd", response={201: AkunOPDOut})
+def buat_akun_opd(request, data: AkunOPDIn):
+    wajib_verifikator(request)
+    opd = get_object_or_404(OPD, id=data.opd_id, aktif=True)
+    if User.objects.filter(username=data.username).exists():
+        raise HttpError(400, "Username sudah dipakai.")
+    validasi_sandi(data.password)
+    user = User(username=data.username, peran=User.OPERATOR, opd=opd,
+               first_name=data.nama_depan, nip=data.nip, telepon=data.telepon)
+    user.set_password(data.password)
+    user.save()
+    LogAktivitas.catat(request.user, "buat akun operator", user.id, f"{user.username} ({opd.kode})")
+    return 201, akun_ringkas(user)
+
+
+@api.post("/akun-opd/{user_id}/nonaktifkan", response=PesanOut)
+def nonaktifkan_akun_opd(request, user_id: int):
+    wajib_verifikator(request)
+    user = get_object_or_404(User, id=user_id, peran=User.OPERATOR)
+    user.is_active = False
+    user.save()
+    LogAktivitas.catat(request.user, "nonaktifkan akun operator", user.id, user.username)
+    return {"pesan": f"Akun “{user.username}” dinonaktifkan."}
+
+
+@api.post("/akun-opd/{user_id}/aktifkan", response=PesanOut)
+def aktifkan_akun_opd(request, user_id: int):
+    wajib_verifikator(request)
+    user = get_object_or_404(User, id=user_id, peran=User.OPERATOR)
+    user.is_active = True
+    user.save()
+    LogAktivitas.catat(request.user, "aktifkan akun operator", user.id, user.username)
+    return {"pesan": f"Akun “{user.username}” diaktifkan."}
+
+
+@api.post("/akun-opd/{user_id}/reset-sandi", response=PesanOut)
+def reset_sandi_akun_opd(request, user_id: int, data: ResetSandiIn):
+    wajib_verifikator(request)
+    user = get_object_or_404(User, id=user_id, peran=User.OPERATOR)
+    validasi_sandi(data.password, user=user)
+    user.set_password(data.password)
+    user.save()
+    LogAktivitas.catat(request.user, "reset sandi akun operator", user.id, user.username)
+    return {"pesan": f"Sandi akun “{user.username}” diperbarui."}
 
 
 # ------------------------------- inovasi -------------------------------

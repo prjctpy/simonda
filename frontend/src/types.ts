@@ -15,6 +15,16 @@ export interface UserProfile {
   opd?: OPD | null;
 }
 
+export interface AkunOPD {
+  id: number;
+  username: string;
+  nama: string;
+  opd: OPD;
+  nip?: string;
+  telepon?: string;
+  is_active: boolean;
+}
+
 export interface Periode {
   id: number;
   tahun: number;

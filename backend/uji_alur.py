@@ -44,7 +44,7 @@ periode = Periode.objects.get(aktif=True)
 
 User.objects.filter(username__startswith="uji_").delete()
 Inovasi.objects.all().delete()
-dinkes, distan = OPD.objects.get(kode="DINKES"), OPD.objects.get(kode="DISTAN")
+dinkes, distan = OPD.objects.get(kode="DINKES"), OPD.objects.get(kode="DISTANPANGAN")
 bappe = OPD.objects.get(kode="BAPPERIDA")
 User.objects.create_user("uji_dinkes", password=SANDI, peran=User.OPERATOR, opd=dinkes)
 User.objects.create_user("uji_distan", password=SANDI, peran=User.OPERATOR, opd=distan)
@@ -215,6 +215,63 @@ r = c.get("/api/ekspor/iga", **kepala(t_vr))
 cek("CSV berhasil", r.status_code == 200 and b"SIPADU" in r.content)
 cek("berawalan BOM untuk Excel", r.content.startswith("\ufeff".encode()))
 cek("rekap OPD terbaca", c.get("/api/statistik/opd", **kepala(t_vr)).status_code == 200)
+
+print("\n== Kelola akun OPD (akun daerah membuat akun perangkat daerah) ==")
+User.objects.filter(username="uji_akun_baru").delete()
+cek("operator tidak boleh lihat daftar akun OPD",
+    c.get("/api/akun-opd", **kepala(t_op)).status_code == 403)
+cek("operator tidak boleh buat akun OPD",
+    c.post("/api/akun-opd", {"username": "x", "password": "SandiPanjang123", "opd_id": dinkes.id},
+           content_type="application/json", **kepala(t_op)).status_code == 403)
+
+r = c.post("/api/akun-opd", {
+    "username": "uji_akun_baru", "password": "SandiPanjang123",
+    "nama_depan": "Operator Uji", "opd_id": dinkes.id,
+}, content_type="application/json", **kepala(t_vr))
+cek("verifikator berhasil buat akun operator", r.status_code == 201, r.content[:200])
+akun_baru_id = r.json()["id"]
+
+cek("username dobel ditolak",
+    c.post("/api/akun-opd", {"username": "uji_akun_baru", "password": "SandiPanjang123",
+                             "opd_id": dinkes.id}, content_type="application/json",
+           **kepala(t_vr)).status_code == 400)
+cek("sandi terlalu pendek ditolak",
+    c.post("/api/akun-opd", {"username": "uji_akun_lain", "password": "pendek",
+                             "opd_id": dinkes.id}, content_type="application/json",
+           **kepala(t_vr)).status_code == 400)
+cek("daftar akun OPD terbaca verifikator", len(c.get("/api/akun-opd", **kepala(t_vr)).json()) > 0)
+
+def masuk_dengan(nama, sandi):
+    r = c.post("/api/auth/masuk", {"username": nama, "password": sandi},
+               content_type="application/json")
+    return r.json().get("akses")
+
+
+t_baru = masuk_dengan("uji_akun_baru", "SandiPanjang123")
+cek("akun baru bisa masuk dengan sandi yang diketik verifikator", bool(t_baru))
+daftar_akun_baru = c.get("/api/inovasi", **kepala(t_baru)).json()
+cek("akun baru cuma lihat inovasi OPD sendiri (DINKES)",
+    len(daftar_akun_baru) > 0 and all(i["opd"]["kode"] == "DINKES" for i in daftar_akun_baru),
+    {i["opd"]["kode"] for i in daftar_akun_baru})
+
+c.post(f"/api/akun-opd/{akun_baru_id}/nonaktifkan", **kepala(t_vr))
+cek("akun nonaktif tidak bisa masuk lagi",
+    c.post("/api/auth/masuk", {"username": "uji_akun_baru", "password": "SandiPanjang123"},
+           content_type="application/json").status_code == 401)
+
+c.post(f"/api/akun-opd/{akun_baru_id}/aktifkan", **kepala(t_vr))
+cek("akun aktif kembali bisa masuk dengan sandi lama",
+    bool(masuk_dengan("uji_akun_baru", "SandiPanjang123")))
+
+c.post(f"/api/akun-opd/{akun_baru_id}/reset-sandi", {"password": "SandiBaruLagi456"},
+       content_type="application/json", **kepala(t_vr))
+cek("sandi lama tidak berlaku setelah direset",
+    c.post("/api/auth/masuk", {"username": "uji_akun_baru", "password": "SandiPanjang123"},
+           content_type="application/json").status_code == 401)
+cek("sandi baru berlaku setelah direset",
+    bool(masuk_dengan("uji_akun_baru", "SandiBaruLagi456")))
+
+User.objects.filter(username="uji_akun_baru").delete()
 
 print(f"\n{'=' * 46}\n  {lolos} lolos, {gagal} gagal\n{'=' * 46}\n")
 raise SystemExit(1 if gagal else 0)

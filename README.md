@@ -200,7 +200,7 @@ setelahnya.
 
 ---
 
-## Menaikkan ke produksi
+## Menaikkan ke produksi (VPS / server sendiri)
 
 ```bash
 DEBUG=0
@@ -227,3 +227,74 @@ Berkas bukti dukung disimpan di `backend/media/`. Folder ini **tidak** ikut dala
 kegiatan yang tidak ada salinannya di tempat lain. Backup basis data saja tidak cukup.
 
 Simpan juga `LogAktivitas` (jejak audit) minimal satu siklus penilaian penuh.
+
+---
+
+## Deploy gratis (Render + Neon + R2 + Cloudflare Pages)
+
+Susunan tanpa server sendiri, semua di tier gratis:
+
+| Bagian | Layanan | Peran |
+|---|---|---|
+| Backend | [Render](https://render.com) | Web service Python, jalankan `render.yaml` |
+| Basis data | [Neon](https://neon.tech) | PostgreSQL terkelola |
+| Berkas bukti dukung | [Cloudflare R2](https://www.cloudflare.com/products/r2/) | Pengganti `backend/media/`, wajib (lihat catatan di bawah) |
+| Frontend | [Cloudflare Pages](https://pages.cloudflare.com) | Hosting statis hasil `npm run build` |
+
+Kenapa berkas **wajib** pindah ke R2, bukan sekadar pilihan: disk Render tier
+gratis bersifat sementara — berkas yang diunggah ke `backend/media/` hilang
+tiap kali servis redeploy atau bangun ulang. Dan karena frontend (Cloudflare
+Pages) dan backend (Render) jadi dua domain berbeda, tautan berkas juga harus
+berupa URL utuh (R2 memberi ini otomatis), bukan path relatif seperti saat
+frontend-backend satu server.
+
+### Urutan setup
+
+**1. Neon** — buat project, salin connection string-nya (`postgresql://...`).
+Simpan dulu, dipakai di langkah 3.
+
+**2. Cloudflare R2** — buat bucket, buat R2 API token (catat *Access Key ID*
+dan *Secret Access Key*), catat *Account ID* kamu (untuk menyusun
+`R2_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com`).
+
+**3. Render** — hubungkan repo GitHub ini, lalu **New → Blueprint** dan pilih
+`render.yaml` di root repo. Setelah Blueprint dibuat, isi env var yang di
+`render.yaml` ditandai `sync: false` lewat dashboard (nilainya sengaja tidak
+ada di file, supaya tidak ke-commit ke git):
+
+```
+SECRET_KEY       = (python -c "import secrets; print(secrets.token_urlsafe(50))")
+ALLOWED_HOSTS    = simonda-api-xxxx.onrender.com   # domain yang Render kasih
+DATABASE_URL     = (connection string dari langkah 1)
+R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_ENDPOINT_URL
+                 = (dari langkah 2)
+CORS_ORIGINS, CSRF_ORIGINS = (isi sementara dengan apa saja, diupdate di langkah 5)
+```
+
+Deploy, lalu catat URL servisnya.
+
+**4. Cloudflare Pages** — hubungkan repo yang sama. Root directory `frontend`,
+framework preset **Vite**, build command `npm run build`, output directory
+`dist`. Isi environment variable `VITE_API_URL` = URL Render dari langkah 3
+(Vite membakukan env var ini saat *build*, jadi harus diisi di sini, bukan
+cuma di `.env` lokal). Deploy, catat domain Pages-nya.
+
+**5. Kembali ke Render** — update `CORS_ORIGINS` dan `CSRF_ORIGINS` dengan
+domain Cloudflare Pages dari langkah 4 (`https://simonda-xxxx.pages.dev`),
+lalu redeploy servis.
+
+**6. Isi data awal** — buka tab **Shell** di dashboard Render, jalankan:
+```bash
+python manage.py seed_simonda --tahun 2027
+```
+Ini mengisi 45 OPD, katalog indikator, dan akun administrator ke database
+Neon yang masih kosong.
+
+### Yang perlu diketahui soal tier gratis
+
+Render free web service **tidur** setelah kurang lebih 15 menit tidak ada
+trafik — permintaan pertama setelahnya bisa menunggu 30–60 detik sebelum
+servis menyala lagi (*cold start*). Beri tahu verifikator/operator soal ini
+supaya tidak mengira sistem rusak. Neon free tier juga auto-suspend saat idle,
+tapi bangunnya jauh lebih cepat (biasanya di bawah 1 detik) dan sudah
+ditangani lewat `conn_max_age=0` di `settings.py`.

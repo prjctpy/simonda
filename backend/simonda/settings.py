@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,6 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "storages",
     "inovasi",
 ]
 
@@ -48,7 +50,15 @@ TEMPLATES = [{
     ]},
 }]
 
-if os.getenv("DB_NAME"):
+if os.getenv("DATABASE_URL"):
+    # Postgres terkelola (mis. Neon) di produksi, lewat satu connection string.
+    # conn_max_age=0 sengaja — Neon free tier auto-suspend saat idle; koneksi
+    # persisten Django yang menahan koneksi lama ke instance yang sudah
+    # disuspend adalah sumber error umum ("SSL connection has been closed
+    # unexpectedly").
+    DATABASES = {"default": dj_database_url.config(
+        env="DATABASE_URL", conn_max_age=0, ssl_require=True)}
+elif os.getenv("DB_NAME"):
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME"),
@@ -80,10 +90,31 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
-}
+
+if os.getenv("R2_BUCKET_NAME"):
+    # Cloudflare R2 (kompatibel S3) untuk berkas bukti dukung. Wajib di
+    # produksi: disk Render bersifat ephemeral, berkas yang disimpan lokal
+    # hilang tiap redeploy. Bucket privat + URL bertanda tangan (perilaku
+    # default django-storages) karena bukti dukung berisi dokumen pemerintah,
+    # bukan untuk diakses publik.
+    AWS_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
+    AWS_S3_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL")  # https://<account_id>.r2.cloudflarestorage.com
+    AWS_S3_REGION_NAME = "auto"
+    AWS_S3_SIGNATURE_VERSION = "s3v4"     # wajib untuk R2
+    AWS_S3_ADDRESSING_STYLE = "path"      # direkomendasikan Cloudflare untuk klien S3
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_EXPIRE = 3600
+    STORAGES = {
+        "default": {"BACKEND": "storages.backends.s3.S3Storage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+else:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

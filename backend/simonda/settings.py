@@ -2,10 +2,23 @@ import os
 from pathlib import Path
 
 import dj_database_url
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+
+# load_dotenv() di atas TIDAK menimpa variabel yang sudah di-export di shell
+# (perilaku default) -- itu yang kita mau untuk ALLOWED_HOSTS dkk, supaya
+# `export ALLOWED_HOSTS=...,testserver` sebelum menjalankan skrip uji (lihat
+# README) tetap bekerja. Tapi khusus kunci yang menentukan infrastruktur mana
+# yang dipakai, backend/.env proyek ini harus selalu menang, supaya env var
+# nyasar dari project lain di mesin yang sama (mis. DATABASE_URL) tidak
+# diam-diam membelokkan Simonda ke database/storage yang salah.
+_dotenv_file = dotenv_values(BASE_DIR / ".env")
+for _key in ("DATABASE_URL", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY",
+             "R2_BUCKET_NAME", "R2_ENDPOINT_URL"):
+    if _key in _dotenv_file:
+        os.environ[_key] = _dotenv_file[_key] or ""
 
 SECRET_KEY = os.getenv("SECRET_KEY", "ganti-ini-sebelum-produksi")
 DEBUG = os.getenv("DEBUG", "0") == "1"

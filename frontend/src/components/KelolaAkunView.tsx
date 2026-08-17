@@ -136,7 +136,7 @@ export const KelolaAkunView: React.FC<KelolaAkunViewProps> = ({
           className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-md transition"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Buat Akun Baru</span>
+          <span>Buat Akun Baru</span>
         </button>
       </div>
 

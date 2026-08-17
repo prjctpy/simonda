@@ -71,7 +71,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition transform active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Buat Inovasi Baru</span>
+              <span>Buat Inovasi Baru</span>
             </button>
 
             {user?.bisa_verifikasi && (

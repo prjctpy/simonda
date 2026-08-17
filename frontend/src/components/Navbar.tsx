@@ -46,29 +46,33 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'dashboard'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Dashboard</span>
-            </button>
+            {user && (
+              <>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'dashboard'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </button>
 
-            <button
-              onClick={() => setActiveTab('inovasi')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'inovasi'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Lightbulb className="w-4 h-4" />
-              <span>Inovasi Daerah</span>
-            </button>
+                <button
+                  onClick={() => setActiveTab('inovasi')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'inovasi'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Lightbulb className="w-4 h-4" />
+                  <span>Inovasi Daerah</span>
+                </button>
+              </>
+            )}
 
             {user?.bisa_verifikasi && (
               <>
@@ -152,57 +156,59 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Tab Bar */}
-      <div className="md:hidden flex items-center justify-around bg-slate-950 border-t border-slate-800 px-2 py-1.5 text-xs">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center py-1 px-2 ${
-            activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4 mb-0.5" />
-          <span>Dashboard</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('inovasi')}
-          className={`flex flex-col items-center py-1 px-2 ${
-            activeTab === 'inovasi' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-          }`}
-        >
-          <Lightbulb className="w-4 h-4 mb-0.5" />
-          <span>Inovasi</span>
-        </button>
-        {user?.bisa_verifikasi && (
-          <>
-            <button
-              onClick={() => setActiveTab('spd')}
-              className={`flex flex-col items-center py-1 px-2 ${
-                activeTab === 'spd' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-              }`}
-            >
-              <FileSpreadsheet className="w-4 h-4 mb-0.5" />
-              <span>SPD</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('rekap')}
-              className={`flex flex-col items-center py-1 px-2 ${
-                activeTab === 'rekap' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4 mb-0.5" />
-              <span>Rekap</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('akun')}
-              className={`flex flex-col items-center py-1 px-2 ${
-                activeTab === 'akun' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-              }`}
-            >
-              <UserCog className="w-4 h-4 mb-0.5" />
-              <span>Akun</span>
-            </button>
-          </>
-        )}
-      </div>
+      {user && (
+        <div className="md:hidden flex items-center justify-around bg-slate-950 border-t border-slate-800 px-2 py-1.5 text-xs">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center py-1 px-2 ${
+              activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+            }`}
+          >
+            <LayoutDashboard className="w-4 h-4 mb-0.5" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('inovasi')}
+            className={`flex flex-col items-center py-1 px-2 ${
+              activeTab === 'inovasi' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+            }`}
+          >
+            <Lightbulb className="w-4 h-4 mb-0.5" />
+            <span>Inovasi</span>
+          </button>
+          {user.bisa_verifikasi && (
+            <>
+              <button
+                onClick={() => setActiveTab('spd')}
+                className={`flex flex-col items-center py-1 px-2 ${
+                  activeTab === 'spd' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4 mb-0.5" />
+                <span>SPD</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('rekap')}
+                className={`flex flex-col items-center py-1 px-2 ${
+                  activeTab === 'rekap' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4 mb-0.5" />
+                <span>Rekap</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('akun')}
+                className={`flex flex-col items-center py-1 px-2 ${
+                  activeTab === 'akun' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                }`}
+              >
+                <UserCog className="w-4 h-4 mb-0.5" />
+                <span>Akun</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </header>
   );
 };
